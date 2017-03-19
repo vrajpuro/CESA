@@ -1,4 +1,6 @@
 #include <FreeRTOS_ARM.h>
+#include <DueTimer.h>
+
 
 #define GPIO_PIN 51
 
@@ -6,37 +8,42 @@
 #define TIMER_PERIOD_IN_TICKS pdMS_TO_TICKS(TIMER_PERIOD)
 
 int GPIO_STATE = 0;
-void vClockCallback(TimerHandle_t pxTimer){
-  GPIO_STATE = !GPIO_STATE;
-  digitalWrite(GPIO_PIN, GPIO_STATE);
-  }
+//void vClockCallback(TimerHandle_t pxTimer){
+//  GPIO_STATE = !GPIO_STATE;
+//  digitalWrite(GPIO_PIN, GPIO_STATE);
+//  }
 
 void setup() {
+  SerialUSB.begin(0);
+  while(!SerialUSB);
   // initialize digital pin 51 as an output.
   pinMode(GPIO_PIN, OUTPUT);
 
-  TimerHandle_t xClockTimer = xTimerCreate("Clock", TIMER_PERIOD_IN_TICKS, pdTRUE, 0, vClockCallback);
-  xTimerStart(xClockTimer, portMAX_DELAY);
+  portBASE_TYPE s1;
+
+  Timer.getAvailable().attachInterrupt(vClockCallback).start(10);
+
+//  TimerHandle_t xClockTimer = xTimerCreate("Clock", TIMER_PERIOD_IN_TICKS, pdTRUE, 0, vClockCallback);
+//  xTimerStart(xClockTimer, portMAX_DELAY);
+
+  s1 = xTaskCreate(vSerialRead, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
   vTaskStartScheduler();
 }
-
-void loop() {
-  // put your main code here, to run repeatedly:
   uint32_t clockTicks = 0;
   int32_t phaseOffset = 0;
   
-  void vClockCallback(TimeHandle_t pxTimer) {
+  void vClockCallback() {
     uint32_t tick = ++clockTicks + phaseOffset;
     //clockTicks++;
 
     // every 10 ticks, toggle GPIO high
-    if(tick % 10 == 0) {
+    if(tick % 1000 == 0) {
       digitalWrite(GPIO_PIN, HIGH);
     }
 
     // every 11th ticks, toggle GPIO low
-    if(tick % 10 == 1) {
+    if(tick % 1000 == 100) {
       digitalWrite(GPIO_PIN, LOW);
     }
     
@@ -59,11 +66,14 @@ void loop() {
         case 'a': //adjust phase offset +1
           phaseOffset++;
           break;
-         case 'b' : //adjust phase offset -1
+         case 'd' : //adjust phase offset -1
           phaseOffset--;
           break;
       }
      }
     }
    }
+
+ void loop() {
+  // put your main code here, to run repeatedly:
 }
